@@ -1,0 +1,84 @@
+---
+title: "Assignment 5"
+output: html_document
+---
+## Brad Dale and Christine Zlotek
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Read CSV into R
+```{r}
+buildings = read.csv("buildings.csv")
+```
+
+```{r}
+library("tidyr")
+library("dplyr")
+library("ggplot2")
+library("countrycode")
+```
+
+# Question 1
+
+```{r}
+buildings[4] <- NULL
+buildings$City= gsub("\xff", "", buildings$City)
+buildings = buildings %>% separate(City, c("City", "Country"), sep = "[:punct:]")
+buildings$City = as.character(buildings$City)
+buildings %>% group_by(City) %>% tally() %>%
+arrange(desc(n))
+```
+
+# Question 2
+
+```{r}
+buildings$Height..ft. = gsub(",","",buildings$Height..ft.)
+buildings$Height..ft. = as.numeric(buildings$Height..ft.)
+str(buildings$Height..ft.)
+
+buildings %>%
+  group_by(City) %>%
+  summarise(meaninfeet = round(mean(Height..ft., na.m=TRUE), 2)) %>%
+  ggplot(.,aes(x = reorder(City, meaninfeet), y=meaninfeet)) + geom_bar(stat="identity")+coord_flip()
+
+```
+
+# Question 3
+
+```{r}
+buildings$Country=countrycode(buildings$Country,"iso2c","country.name") 
+buildings %>% group_by(Country) %>% tally() %>%
+arrange(desc(n))
+```
+
+# Question 4
+
+```{r}
+buildings %>%
+  group_by(Country) %>%
+  summarise(meaninfeet = round(mean(Height..ft., na.m=TRUE), 2)) %>%
+  ggplot(.,aes(x = reorder(Country, meaninfeet), y=meaninfeet)) + geom_bar(stat="identity")+coord_flip()
+```
+
+# Question 5
+
+```{r}
+buildings %>%
+  group_by(Country) %>%
+  summarise(meaninfeet = round(mean(Height..ft., na.m=TRUE), 2),
+            count=length(Country)) %>%
+  ggplot(.,aes(x = reorder(Country, meaninfeet), y=meaninfeet,fill=as.factor(count))) + geom_bar(stat="identity")+coord_flip()+labs(x="Country",y="Mean Height of Buildings")
+```
+
+# Question 6
+
+```{r}
+buildingsseparated=buildings %>% separate(Use, c("Use1", "Use2", "Use3", "Use4", "Use5", "Use6"), sep = "[:punct:]")
+
+buildingsgathered=buildingsseparated%>%gather(NumUses,UseType,Use1:Use6)
+buildingsgathered$UseType=trimws(buildingsgathered$UseType)
+#levels(as.factor(buildingsgathered$UseType))
+buildingsgathered%>%filter(UseType!="")%>%group_by(UseType)%>%summarise(MeanHeight=mean(Height..ft.))%>%ggplot(aes(x=UseType,y=MeanHeight))+geom_bar(stat="identity")+geom_text(aes(x=UseType,y=MeanHeight+50,label=round(MeanHeight,2)))
+```
+
